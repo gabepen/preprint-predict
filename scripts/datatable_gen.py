@@ -10,7 +10,7 @@ def count_unique_key_values(json_file):
     for item in data:
         if data[item]['pub_journal'] in key_values:
             key_values[data[item]['pub_journal']] += 1
-        else :
+        else:
             key_values[data[item]['pub_journal']] = 1
 
     return key_values
@@ -57,7 +57,7 @@ def main():
     
     pub_count = 0
     for j_count_pair in sorted(journal_counts, key=lambda x: x[1]):
-        if j_count_pair[1] >= 10:
+        if j_count_pair[1] >= 20:
             pub_count += j_count_pair[1]
             print(f"{j_count_pair[0]}: {j_count_pair[1]}" )
     print(pub_count)

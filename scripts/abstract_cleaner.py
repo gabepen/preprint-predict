@@ -6,9 +6,9 @@ def remove_lines_with_high_nonalphanumeric_percentage(files_path, threshold):
     '''working with a directory of bioRxiv abstracts, we want to remove lines with high non-alphanumeric percentage
     '''
     
-    absatracts_files = glob.glob(files_path + '/*.txt')
+    abstracts_files = glob.glob(files_path + '/*.txt')
     
-    for file_path in absatracts_files:
+    for file_path in abstracts_files:
         with open(file_path, 'r') as file:
             lines = file.readlines()
 
@@ -23,10 +23,11 @@ def remove_lines_with_high_nonalphanumeric_percentage(files_path, threshold):
             else:
                 print(f"Removed line: {line}")
                 print(f"From file: {file_path}")
-    
+
         with open(file_path, 'w') as file:
-            file.write(filtered_lines)
-        
+            for line in filtered_lines:
+                file.write(line + ' ')
+    
 
 def main():
     parser = argparse.ArgumentParser(description='Remove lines with high alphanumeric percentage from a file.')
