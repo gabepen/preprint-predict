@@ -1,6 +1,7 @@
 import json
 import argparse
 import glob
+import torch
 
 def count_unique_key_values(json_file):
     with open(json_file) as file:
@@ -40,7 +41,28 @@ def gen_data_table(metadata_json, abstract_dir, output_file):
             
             # write out 
             file.write(f"{doi}\t{pub_journal}\t{abstract_content}\n")
-        
+            
+def get_valid_papers(valid_journals, metadata_json):
+    with open(metadata_json) as file:
+        data = json.load(file)
+    
+    valid_papers = []
+    for preprint in data.keys():
+        if data[preprint]['pub_journal'] in valid_journals:
+            valid_papers.append(preprint)
+    return valid_papers
+    
+def one_hot_encode(valid_papers, valid_journals, metadata_json):   
+    with open(metadata_json) as file:
+        data = json.load(file)
+    
+    encodings = []
+    for preprint in valid_papers:
+        encoding = [0] * len(valid_journals)
+        encoding[valid_journals.index(data[preprint]['pub_journal'])] = 1
+        encodings.append(encoding)
+    return encodings
+
 def main():
     parser = argparse.ArgumentParser(description='Remove lines with high alphanumeric percentage from a file.')
     parser.add_argument('-f', '--file_path', type=str, help='Path to json file')
@@ -56,12 +78,21 @@ def main():
         journal_counts.append((journal, unique_key_values[journal]))
     
     pub_count = 0
+    valid_journals = []
     for j_count_pair in sorted(journal_counts, key=lambda x: x[1]):
         if j_count_pair[1] >= 20:
-            pub_count += j_count_pair[1]
-            print(f"{j_count_pair[0]}: {j_count_pair[1]}" )
-    print(pub_count)
-        
+            valid_journals.append(j_count_pair[0])
+            #print(f"{j_count_pair[0]}: {j_count_pair[1]}" )
+    
+    valid_papers = get_valid_papers(valid_journals, args.file_path)
+    
+    encodings = one_hot_encode(valid_papers, valid_journals, args.file_path)
+    
+    one_hot_tensor = torch.tensor(encodings)
+    torch.save(one_hot_tensor, "pub_journal.pt")
+    with open('valid_papers2.txt', 'w') as file:
+        for paper in valid_papers:
+            file.write(f"{paper}\n")
     
 
 if __name__ == '__main__':
