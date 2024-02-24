@@ -27,7 +27,7 @@ print(X.shape)
 
 GetMemory()
 
-y = torch.tensor([i%2 for i in range(1,X.shape[0] + 1)])
+y = torch.load('/storage1/gabe/preprint_predict/pub_journal.pt')
 
 # Scramble data
 torch.manual_seed(random_seed)
