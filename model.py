@@ -11,6 +11,7 @@ head_size = 192
 num_heads = 6 #head_size must be divisible by num_heads
 num_blocks = 4
 t_dropout = 0.15
+num_journals = 208
 
 assert head_size % num_heads == 0
 
@@ -108,8 +109,8 @@ class TransformerModel1(nn.Module):
 
         self.ln3 = nn.LayerNorm(100)
 
-        self.linear2 = nn.Linear(sample_width * n_embd//2,100)
-        self.linear3 = nn.Linear(100,1)
+        self.linear2 = nn.Linear(sample_width * n_embd//2,500) # hardcoded for now
+        self.linear3 = nn.Linear(500,num_journals)
 
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
@@ -138,8 +139,6 @@ class TransformerModel1(nn.Module):
 
         x = self.ln3(x)
         x = self.linear3(x) #(batch, 1)
-        x = x.reshape(-1) #(batch)
-        x = self.sigmoid(x) #(batch)
 
         # print(x.shape)
         # x = self.multihead(x) #batch, input_size, head_size
