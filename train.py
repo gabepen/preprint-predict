@@ -122,14 +122,15 @@ for epoch in range(num_epochs):
     GetTime()
     # Scramble data
     idx = torch.randperm(X_train.shape[0])
+    print(X_train.shape[0])
+    sys.exit(0)
     X_train = X_train[idx]
     y_train = y_train[idx]
-
 
     for ind in range(0,X_train.shape[0],batch_size):
 
         #print(torch.cuda.max_memory_allocated(),"and", torch.cuda.memory_allocated())
-
+        GetMemory()
         try:
             X_batch = X_train[ind:ind+batch_size]
             y_batch = y_train[ind:ind+batch_size]

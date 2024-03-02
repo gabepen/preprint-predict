@@ -6,7 +6,7 @@ sample_width = 256
 input_size1 = sample_width*2
 # output_size1 = 64
 n_chrom = 100
-n_embd = 768
+n_embd = 100
 head_size = 192
 num_heads = 6 #head_size must be divisible by num_heads
 num_blocks = 4
@@ -100,6 +100,7 @@ class TransformerModel1(nn.Module):
         self.pos_embedding = nn.Embedding(sample_width*2, n_embd)
         self.blocks = nn.Sequential(*[Block() for _ in range(num_blocks)])
         self.multihead = MultiHead(num_heads, head_size // num_heads)
+        self.linear0 = nn.Linear(768, 100)
         self.linear1 = nn.Linear(2*sample_width*n_embd,sample_width*n_embd//2) #can change the output size of this
         self.ln1 = nn.LayerNorm(2*sample_width*n_embd)
 
@@ -107,7 +108,7 @@ class TransformerModel1(nn.Module):
         ##
         self.ln2 = nn.LayerNorm(sample_width*n_embd//2)
 
-        self.ln3 = nn.LayerNorm(100)
+        self.ln3 = nn.LayerNorm(500)
 
         self.linear2 = nn.Linear(sample_width * n_embd//2,500) # hardcoded for now
         self.linear3 = nn.Linear(500,num_journals)
@@ -119,6 +120,7 @@ class TransformerModel1(nn.Module):
 
     def forward(self, x):
         # X (batch, 2*sample_width, n_chrom)
+        x = self.linear0(x)
         #print(x.shape)
         device = "cuda" if torch.cuda.is_available() else "cpu" # make this global
         pos_embd = self.pos_embedding(torch.arange(sample_width*2).to(device)) # (2*sample_width, n_embd)
