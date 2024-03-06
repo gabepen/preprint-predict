@@ -140,7 +140,9 @@ class TransformerModel1(nn.Module):
         x = self.relu(x)
 
         x = self.ln3(x)
-        x = self.linear3(x) #(batch, 1)
+        x = self.linear3(x) #(batch, num_journals)
+        #x = x.reshape(-1) #(batch)
+       
 
         # print(x.shape)
         # x = self.multihead(x) #batch, input_size, head_size

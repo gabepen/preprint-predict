@@ -13,6 +13,7 @@ GPU_available = torch.cuda.is_available()
 print(GPU_available)
 num_files = 50_000
 num_epochs = 30
+#batch_size = 128
 batch_size = 128
 train_prop = 0.9
 num_estimate = 5000
@@ -20,14 +21,16 @@ lr_start = 3e-5
 lr_end = lr_start/100
 
 GetMemory()
-X = torch.load('/storage1/gabe/preprint_predict/17K_abstracts_embeddings.pt')
+X = torch.load('/private/groups/corbettlab/gabe/pp_predict/preprint-predict/17K_abstracts_embeddings.pt')
 
 
 print(X.shape)
 
 GetMemory()
 
-y = torch.load('/storage1/gabe/preprint_predict/pub_journal.pt')
+y = torch.load('/private/groups/corbettlab/gabe/pp_predict/preprint-predict/pub_journal.pt')
+
+y = y.argmax(dim=-1)
 
 # Scramble data
 torch.manual_seed(random_seed)
@@ -71,7 +74,7 @@ def estimate_loss(num_samples):
     model.eval()
     for split in ["train", "test"]:
         X, y = get_batch(split, num_samples)
-        y_pred = torch.zeros(num_samples)
+        y_pred = torch.zeros((num_samples,num_journals))
         for i in range(0, num_samples, batch_size):
             try:
                 X_batch = X[i:i+batch_size]
@@ -83,7 +86,7 @@ def estimate_loss(num_samples):
         if GPU_available:
             y_pred = y_pred.to("cuda")                       
         
-        loss = criterion(y_pred, y.float())
+        loss = criterion(y_pred, y)
         predictions = (y_pred).argmax(dim=-1)
 
 
@@ -122,15 +125,12 @@ for epoch in range(num_epochs):
     GetTime()
     # Scramble data
     idx = torch.randperm(X_train.shape[0])
-    print(X_train.shape[0])
-    sys.exit(0)
     X_train = X_train[idx]
     y_train = y_train[idx]
 
     for ind in range(0,X_train.shape[0],batch_size):
 
         #print(torch.cuda.max_memory_allocated(),"and", torch.cuda.memory_allocated())
-        GetMemory()
         try:
             X_batch = X_train[ind:ind+batch_size]
             y_batch = y_train[ind:ind+batch_size]
@@ -148,8 +148,8 @@ for epoch in range(num_epochs):
             torch.cuda.empty_cache()
             y_pred = model(X_batch)
 
-
-        loss = criterion(y_pred, y_batch.float())
+    
+        loss = criterion(y_pred, y_batch)
 
         optimizer.zero_grad()
         loss.backward()
