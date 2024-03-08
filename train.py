@@ -93,7 +93,7 @@ def estimate_loss(num_samples):
         print()
         print(split, "full set:")
         
-
+    
         num_correct = (predictions == y).sum().item()
         acc = num_correct/num_samples
         print(f"Loss {split}: {loss.item():0.5f}, Accuracy {split}: {acc:0.4f}")

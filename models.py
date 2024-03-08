@@ -7,10 +7,10 @@ input_size1 = sample_width*2
 # output_size1 = 64
 n_chrom = 100
 n_embd = 100
-head_size = 192
-num_heads = 6 #head_size must be divisible by num_heads
-num_blocks = 4
-t_dropout = 0.15
+head_size = 96
+num_heads = 4 #head_size must be divisible by num_heads
+num_blocks = 3
+t_dropout = 0.3
 num_journals = 208
 
 assert head_size % num_heads == 0
@@ -114,6 +114,7 @@ class TransformerModel1(nn.Module):
         self.linear3 = nn.Linear(500,num_journals)
 
         self.relu = nn.ReLU()
+        self.gelu = nn.GELU()
         self.sigmoid = nn.Sigmoid()
 
         self.dropout = nn.Dropout(t_dropout)
@@ -132,12 +133,12 @@ class TransformerModel1(nn.Module):
         x = self.ln1(x) #(batch,2*sample_width*n_embd)
         x = self.linear1(x) #(batch, sample_width * n_embd//2)
         x = self.dropout(x)
-        x = self.relu(x)
+        x = self.gelu(x)
 
         x = self.ln2(x)
         x = self.linear2(x) #(batch, 100) #add layernorms?
         x = self.dropout(x)
-        x = self.relu(x)
+        x = self.gelu(x)
 
         x = self.ln3(x)
         x = self.linear3(x) #(batch, num_journals)
