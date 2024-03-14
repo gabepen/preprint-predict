@@ -66,31 +66,33 @@ def one_hot_encode(valid_papers, valid_journals, metadata_json):
 def main():
     parser = argparse.ArgumentParser(description='Remove lines with high alphanumeric percentage from a file.')
     parser.add_argument('-f', '--file_path', type=str, help='Path to json file')
-    parser.add_argument('-m', '--metadata', type=str, help='Path to metadata json file')   
     parser.add_argument('-a', '--abstracts', type=str, help='Path to directory of abstracts')
     
 
     args = parser.parse_args()
 
+    # count the number of preprints per journal in meta data json 
     unique_key_values = count_unique_key_values(args.file_path)
     journal_counts = []
     for journal in unique_key_values:
         journal_counts.append((journal, unique_key_values[journal]))
-    
+
+    # filter out journals with less than 100 preprints
     pub_count = 0
     valid_journals = []
     for j_count_pair in sorted(journal_counts, key=lambda x: x[1]):
-        if j_count_pair[1] >= 20:
+        if j_count_pair[1] >= 100:
             valid_journals.append(j_count_pair[0])
-            #print(f"{j_count_pair[0]}: {j_count_pair[1]}" )
+            print(f"{j_count_pair[0]}: {j_count_pair[1]}" )
+    input()
     
     valid_papers = get_valid_papers(valid_journals, args.file_path)
     
     encodings = one_hot_encode(valid_papers, valid_journals, args.file_path)
     
     one_hot_tensor = torch.tensor(encodings)
-    torch.save(one_hot_tensor, "pub_journal.pt")
-    with open('valid_papers2.txt', 'w') as file:
+    torch.save(one_hot_tensor, "pub_journal_70k.pt")
+    with open('valid_papers_70k.txt', 'w') as file:
         for paper in valid_papers:
             file.write(f"{paper}\n")
     
