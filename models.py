@@ -1,17 +1,26 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from embed import embed
+
+##?? scale up model?
 
 sample_width = 256
-input_size1 = sample_width*2
+input_size = sample_width*2
 # output_size1 = 64
-n_chrom = 100
-n_embd = 100
-head_size = 96
-num_heads = 4 #head_size must be divisible by num_heads
-num_blocks = 3
-t_dropout = 0.3
+n_embd = 768
+head_size = 12 * 6
+num_heads = 12 #head_size must be divisible by num_heads
+num_blocks = 4
+t_dropout = 0.2
 num_journals = 208
+step_size = 256
+
+batch_size = 128
+
+
+GPU_available = torch.cuda.is_available()
+print(GPU_available)
 
 assert head_size % num_heads == 0
 
@@ -23,7 +32,7 @@ class Head(nn.Module):
        self.key = nn.Linear(n_embd, head_size, bias=False)
        self.query = nn.Linear(n_embd, head_size, bias=False)
        self.value = nn.Linear(n_embd, head_size, bias=False)
-       self.register_buffer("communication_matrix", torch.ones(input_size1,input_size1))
+       self.register_buffer("communication_matrix", torch.ones(input_size,input_size))
        self.communication_matrix = torch.tril(self.communication_matrix)
        self.dropout = nn.Dropout(t_dropout)
 
@@ -94,16 +103,14 @@ class Block(nn.Module):
 
 class TransformerModel1(nn.Module):
 
-
     def __init__(self):
         super().__init__()
         self.pos_embedding = nn.Embedding(sample_width*2, n_embd)
         self.blocks = nn.Sequential(*[Block() for _ in range(num_blocks)])
         self.multihead = MultiHead(num_heads, head_size // num_heads)
-        self.linear0 = nn.Linear(768, 100)
+        self.linear0 = nn.Linear(768, n_embd)
         self.linear1 = nn.Linear(2*sample_width*n_embd,sample_width*n_embd//2) #can change the output size of this
         self.ln1 = nn.LayerNorm(2*sample_width*n_embd)
-
 
         ##
         self.ln2 = nn.LayerNorm(sample_width*n_embd//2)
@@ -119,9 +126,43 @@ class TransformerModel1(nn.Module):
 
         self.dropout = nn.Dropout(t_dropout)
 
+    @torch.no_grad()
+    def evaluate(self, x, split="test"):
+
+        if split == "train":
+            x = embed(x)
+            if GPU_available:
+                x = x.to("cuda")
+            return self(x)
+        
+        elif split == "test":
+
+            y = torch.zeros(len(x), num_journals)
+            for i, example in enumerate(x):
+                xx = torch.tensor([example[s:s + input_size] for s in range(0, len(example) - input_size, step_size)])
+                yy = torch.zeros(num_journals)
+                if GPU_available:
+                    yy = yy.to("cuda")
+                for istart in range(0, xx.shape[0], batch_size):
+                    iend = min(istart + batch_size, xx.shape[0])
+                    xx_batch = xx[istart:iend]
+                    xx_batch = embed(xx_batch)
+                    if GPU_available:
+                        xx_batch = xx_batch.to("cuda")
+                    out = self(xx_batch) 
+                    yy += F.softmax(out, dim=-1).sum(dim=0)
+
+                yy /= xx.shape[0]
+
+                y[i] = yy
+
+            return y
+
+
+                
     def forward(self, x):
         # X (batch, 2*sample_width, n_chrom)
-        x = self.linear0(x)
+        # x = self.linear0(x) ##??
         #print(x.shape)
         device = "cuda" if torch.cuda.is_available() else "cpu" # make this global
         pos_embd = self.pos_embedding(torch.arange(sample_width*2).to(device)) # (2*sample_width, n_embd)
