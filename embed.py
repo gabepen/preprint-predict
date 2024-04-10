@@ -19,11 +19,14 @@ def tokenize(sentence):
     '''
     
     '''
-def embed(input_ids, attention_mask):
-    
+def embed(input_ids, attention_mask=None):
+
+    if attention_mask is None:
+        attention_mask = 1 - (input_ids == tokenizer.pad_token_id).int()
+
     with torch.no_grad():
         embeddings = model(input_ids = input_ids, attention_mask = attention_mask)[0]
-    return embeddings[0]
+    return embeddings
     
 
 def main():
